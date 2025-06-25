@@ -1,0 +1,27 @@
+---
+- name: Install PostgreSQL 14 Desktop on macOS
+  hosts: local_machine
+  gather_facts: true
+  tasks:
+    - name: Install postgres via homebrew
+      community.general.homebrew:
+        name: "postgresql@{{ group_postgres_version }}"
+        path: /opt/homebrew/bin
+        state: present
+
+    - name: Install psycopg2
+      pip:
+        name: psycopg2-binary
+        state: present
+
+    - name: Find out if pg has been initialized
+      ansible.builtin.stat:
+        path: "/opt/homebrew/var/postgresql@{{ group_postgres_version }}/pg_hba.conf"
+      register: postgres_data
+
+    - name: Initialize PostgreSQL if needed
+      shell: "/opt/homebrew/opt/postgresql@{{ group_postgres_version }}/bin/pg_ctl initdb --pgdata=/opt/homebrew/var/postgresql@{{ group_postgres_version }}"
+      when: not postgres_data.stat.exists
+
+    - name: Start PostgreSQL 14 with Homebrew services
+      shell: brew services start postgresql@{{ group_postgres_version }}

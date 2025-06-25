@@ -1,0 +1,43 @@
+---
+- name: Clone repositories (clone-repos.yml)
+  hosts: local_machine
+  gather_facts: true
+  tasks:
+    - name: Recursively create the directory used to clone the repos
+      ansible.builtin.file:
+        path: "{{ group_develop_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Ensure git is installed (macOS)
+      homebrew:
+        name: git
+        state: present
+
+    - name: Add GitHub to known_hosts
+      ansible.builtin.shell: ssh-keyscan github.com >> {{ ansible_env.HOME }}/.ssh/known_hosts
+
+    - name: Log clone repositories
+      ansible.builtin.debug:
+        msg: "git@github.com:{{ group_repo_organization ~ '/' if group_repo_organization is defined and group_repo_organization else '' }}{{ item }}.git"
+      loop: "{{ group_clone_repos.keys() | list }}"
+
+    - name: Clone repositories in parallel
+      git:
+        repo: "git@github.com:{{ group_repo_organization ~ '/' if group_repo_organization is defined and group_repo_organization else '' }}{{ item }}.git"
+        dest: "{{ [group_develop_dir, item] | path_join }}"
+        clone: yes
+        update: yes
+      loop: "{{ group_clone_repos.keys() | list }}"
+      async: 600
+      poll: 0
+      register: git_async_jobs
+
+    - name: Wait for all git clone jobs to finish
+      async_status:
+        jid: "{{ item.ansible_job_id }}"
+      register: git_clone_results
+      until: git_clone_results.finished
+      retries: 100
+      delay: 5
+      loop: "{{ git_async_jobs.results }}"

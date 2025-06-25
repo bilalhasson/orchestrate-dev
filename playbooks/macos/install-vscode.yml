@@ -1,0 +1,56 @@
+---
+- name: Install Visual Studio Code on macOS
+  hosts: local_machine
+  become: false
+  gather_facts: true
+  vars:
+    vscode_cask_name: visual-studio-code
+    extensions:
+      - formulahendry.auto-rename-tag
+      - ms-python.black-formatter
+      - wmaurer.change-case
+      - streetsidesoftware.code-spell-checker
+      - usernamehw.errorlens
+      - dsznajder.es7-react-js-snippets
+      - dbaeumer.vscode-eslint
+      - github.vscode-github-actions
+      - github.vscode-pull-request-github
+      - ecmel.vscode-html-css
+      - orta.vscode-jest
+      - ms-vsliveshare.vsliveshare
+      - esbenp.prettier-vscode
+      - yoavbls.pretty-ts-errors
+      - ms-python.vscode-pylance
+      - ms-python.python
+      - ms-python.debugpy
+      - tushortz.python-extended-snippets
+      - frhtylcn.pythonsnippets
+      - sanity-io.vscode-sanity
+      - wayou.vscode-todo-highlight
+      - gruntfuggly.todo-tree
+  tasks:
+    - name: Ensure Homebrew is installed
+      homebrew:
+        state: present
+      tags: [brew, vscode]
+
+    - name: Check if Visual Studio Code is already installed
+      stat:
+        path: "/Applications/Visual Studio Code.app"
+      register: vscode_installed
+      tags: [vscode, check]
+
+    - name: Install Visual Studio Code using Homebrew Cask
+      community.general.homebrew_cask:
+        name: "{{ vscode_cask_name }}"
+        state: present
+      when: not vscode_installed.stat.exists
+      tags: [vscode, gui]
+
+    - name: Install VSCode extensions using code CLI
+      ansible.builtin.command: code --install-extension {{ item }}
+      loop: "{{ extensions }}"
+      register: vscode_extension_result
+      changed_when: "'already installed' not in vscode_extension_result.stdout"
+      failed_when: vscode_extension_result.rc != 0 and 'already installed' not in vscode_extension_result.stdout
+      tags: [vscode, extensions]

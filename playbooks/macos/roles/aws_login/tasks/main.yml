@@ -1,0 +1,24 @@
+- name: Check if AWS SSO is already logged in
+  shell: aws sts get-caller-identity --profile default
+  register: sso_status
+  ignore_errors: true
+
+- name: Run AWS SSO login (user must complete browser authentication)
+  ansible.builtin.shell: aws sso login --profile default
+  when: sso_status.rc != 0
+  ignore_errors: true
+  register: sso_login
+
+- name: Prompt user to confirm SSO login is complete
+  pause:
+    prompt: |
+      Please complete the AWS SSO login in your browser window.
+      Press ENTER here once you have finished authentication.
+  when: sso_status.rc != 0
+
+- name: Log in to AWS ECR
+  shell: |
+    aws ecr get-login-password --region {{ group_aws_details.region }} | \
+    docker login --username AWS --password-stdin {{ group_aws_details.ecr_login_url }}
+  environment:
+    AWS_PROFILE: "{{ aws_profile | default('default') }}"

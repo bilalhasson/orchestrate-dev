@@ -1,0 +1,14 @@
+# Virtual environment
+lib/
+bin/
+pyvenv*
+
+# Python bytecode
+.pytest_cache/
+__pycache__/
+
+# ansible
+share/
+playbook-log.txt
+group_vars/all/env_vars.yml
+.DS_Store

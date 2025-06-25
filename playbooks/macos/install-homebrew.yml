@@ -1,0 +1,23 @@
+---
+- name: Install Homebrew on macOS
+  hosts: local_machine
+  gather_facts: true
+  tasks:
+    - name: Check if Homebrew is installed
+      stat:
+        path: /opt/homebrew/bin/brew
+      register: brew_stat
+
+    - name: Install Homebrew
+      when: not brew_stat.stat.exists
+      shell: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      args:
+        creates: /opt/homebrew/bin/brew
+
+    - name: Ensure Homebrew is in the PATH
+      lineinfile:
+        path: ~/.zprofile
+        line: 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+        state: present
+      when: not brew_stat.stat.exists

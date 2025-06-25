@@ -1,0 +1,27 @@
+---
+- name: Install Postman on macOS
+  hosts: local_machine
+  gather_facts: true
+  tasks:
+    - name: Ensure Homebrew is installed
+      homebrew:
+        state: present
+      tags: [brew, postman]
+
+    - name: Check if Postman is already installed
+      stat:
+        path: /Applications/Postman.app
+      register: postman_installed
+      tags: [postman, check]
+
+    - name: Install Postman using Homebrew Cask
+      community.general.homebrew_cask:
+        name: postman
+        state: present
+      when: not postman_installed.stat.exists
+      tags: [postman, gui]
+
+    - name: Print success message
+      debug:
+        msg: "Postman is installed and ready to use."
+      tags: [postman]

@@ -1,0 +1,43 @@
+---
+- name: Install AWS CLI v2 on target machine (install-awscli-macos.yml)
+  hosts: local_machine
+  gather_facts: true
+  vars:
+    tmp_dir: "{{ override_executable_temp_dir | default('/tmp') }}"
+  tasks:
+    - name: Download awscliv2 installer.
+      get_url:
+        url: "https://awscli.amazonaws.com/AWSCLIV2.pkg"
+        dest: "{{ tmp_dir }}/AWSCLIV2.pkg"
+        mode: "0644"
+        validate_certs: no
+
+    - name: Run the installer.
+      command:
+        cmd: "installer -pkg {{ tmp_dir }}/AWSCLIV2.pkg -target /"
+        creates: /usr/local/bin/aws
+      become: true
+      register: aws_install
+
+    - name: Ensure ~/.aws directory exists
+      file:
+        path: "{{ ansible_env.HOME }}/.aws"
+        state: directory
+        mode: "0700"
+        owner: "{{ ansible_env.USER }}"
+        group: "{{ lookup('pipe', 'id -gn') }}"
+
+    - name: Create ~/.aws/config with default profile
+      copy:
+        dest: "{{ ansible_env.HOME }}/.aws/config"
+        mode: "0600"
+        owner: "{{ ansible_env.USER }}"
+        group: "{{ lookup('pipe', 'id -gn') }}"
+        content: |
+          [default]
+          region = {{ group_aws_details.region }}
+          output = {{ group_aws_details.output }}
+          sso_start_url = {{ group_aws_details.sso_start_url }}
+          sso_region = {{ group_aws_details.sso_region }}
+          sso_account_id = {{ group_aws_details.sso_account_id }}
+          sso_role_name = {{ group_aws_details.sso_role_name }}

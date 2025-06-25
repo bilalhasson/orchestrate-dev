@@ -1,0 +1,71 @@
+---
+- name: Install dependencies for all backend repositories (install-backend-repo-deps.yml)
+  hosts: local_machine
+  gather_facts: true
+  vars:
+    backend_repos_requiring_pipenv: >-
+      {{ group_clone_repos
+          | dict2items
+          | selectattr('value.service', 'defined')
+          | selectattr('value.service', 'equalto', 'backend')
+          | selectattr('value.install_pipenv', 'defined')
+          | selectattr('value.install_pipenv')
+          | map(attribute='key')
+          | list
+      }}
+  tasks:
+    - name: Install WeasyPrint dependencies on macOS
+      homebrew:
+        name:
+          - gobject-introspection
+          - cairo
+          - pango
+          - gdk-pixbuf
+          - libffi
+        state: present
+
+    - name: Ensure pip is installed (macOS)
+      homebrew:
+        name: python
+        state: present
+
+    - name: Install pipenv using pip
+      pip:
+        name: pipenv
+        executable: pip
+
+    - name: Ensure make is installed (macOS)
+      homebrew:
+        name: make
+        state: present
+
+    - name: Ensure ~/.zshrc file exists
+      file:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        state: touch
+        mode: "0644"
+
+    - name: Ensure DYLD_LIBRARY_PATH is set in ~/.zshrc
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        line: 'export DYLD_LIBRARY_PATH="/opt/homebrew/lib:/usr/local/lib:$DYLD_LIBRARY_PATH"'
+        state: present
+        insertafter: EOF
+
+    - name: Show which backend repos will have pipenv installed and their subdirs
+      debug:
+        msg: "{{ item }} (subdir: {{ group_clone_repos[item].pipenv_subdir | default('root') }}), path: {{ [group_develop_dir, item, group_clone_repos[item].pipenv_subdir | default('')] | path_join }}"
+      loop: "{{ backend_repos_requiring_pipenv }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Install Python dependencies using pipenv in each repo
+      shell: |
+        export PIPENV_IGNORE_VIRTUALENVS=1
+        export LANG=C.UTF-8
+        pipenv install --dev --python {{ python_interpreter }}
+      args:
+        chdir: "{{ [group_develop_dir, item, group_clone_repos[item].pipenv_subdir | default('')] | path_join }}"
+      loop: "{{ backend_repos_requiring_pipenv }}"
+      loop_control:
+        label: "{{ item }}"

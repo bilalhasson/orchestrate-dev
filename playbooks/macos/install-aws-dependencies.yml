@@ -1,0 +1,22 @@
+---
+- name: Install python package required for AWS CLI (install-aws-dependencies.yml)
+  hosts: local_machine
+  gather_facts: true
+  tasks:
+    - name: Ensure python3 is installed (macOS)
+      homebrew:
+        name: python3
+        state: present
+
+    - name: Install python 'packaging' module
+      pip:
+        name: packaging
+        executable: pip3
+
+    - name: Install dependencies
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - curl
+        - unzip

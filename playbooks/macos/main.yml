@@ -1,0 +1,12 @@
+- import_playbook: install-vscode.yml
+- import_playbook: install-homebrew.yml
+- import_playbook: install-aws-dependencies.yml
+- import_playbook: install-awscli-macos.yml
+- import_playbook: clone-repos.yml
+- import_playbook: aws-secretsmanager-get-envs.yml
+- import_playbook: install-backend-repo-deps.yml
+- import_playbook: install-frontend-repo-deps.yml
+- import_playbook: install-postgres14.yml
+- import_playbook: install-docker.yml
+- import_playbook: start-docker-containers.yml
+- import_playbook: install-postman.yml

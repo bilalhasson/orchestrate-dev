@@ -1,0 +1,41 @@
+---
+- name: Install Docker on macOS (install-docker.yml)
+  hosts: local_machine
+  gather_facts: true
+  tasks:
+    - name: Ensure Homebrew is installed
+      homebrew:
+        state: present
+
+    - name: Install Docker using Homebrew
+      homebrew:
+        name: docker
+        state: present
+
+    - name: Install Docker Compose using Homebrew
+      homebrew:
+        name: docker-compose
+        state: present
+
+    - name: Prompt user to install Docker Desktop manually if automation fails
+      pause:
+        prompt: |
+
+          Docker has been installed, so you can use commands like `docker run` and `docker compose`.
+          However, Docker Desktop is not installed automatically by this playbook. 
+          If you want Docker Desktop installed, please run the following command in your terminal:
+
+            brew install --cask docker
+
+          If you've installed Docker Desktop in the past and want to overwrite it, you can run:
+
+            brew reinstall --cask docker
+
+          Or first uninstall it with:
+
+            brew uninstall --cask docker
+
+          After installation, you may need to start Docker Desktop manually.
+          Then open Docker Desktop from Applications and complete setup.
+
+          Press ENTER to continue after completing these steps.

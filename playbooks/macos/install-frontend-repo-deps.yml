@@ -1,0 +1,138 @@
+---
+- name: Install dependencies for all frontend repositories
+  hosts: local_machine
+  gather_facts: true
+  vars:
+    frontend_repos: >-
+      {{ group_clone_repos
+          | dict2items
+          | selectattr('value.service', 'defined')
+          | selectattr('value.service', 'equalto', 'frontend')
+          | map(attribute='key')
+          | list
+      }}
+    frontend_repos_with_npm_install: >-
+      {{ group_clone_repos
+          | dict2items
+          | selectattr('value.service', 'defined')
+          | selectattr('value.service', 'equalto', 'frontend')
+          | selectattr('value.install_method', 'defined')
+          | selectattr('value.install_method', 'equalto', 'npm')
+          | map(attribute='key')
+          | list
+      }}
+    frontend_repos_with_yarn_install: >-
+      {{ group_clone_repos
+          | dict2items
+          | selectattr('value.service', 'defined')
+          | selectattr('value.service', 'equalto', 'frontend')
+          | selectattr('value.install_method', 'defined')
+          | selectattr('value.install_method', 'equalto', 'yarn')
+          | map(attribute='key')
+          | list
+      }}
+  tasks:
+    - name: Build a map of frontend repo directories
+      set_fact:
+        frontend_repo_dirs: >-
+          {{
+            frontend_repo_dirs | default({}) | combine({
+              item: ([group_develop_dir, item, group_clone_repos[item].package_json_sub_dir | default('')] | path_join)
+            })
+          }}
+      loop: "{{ frontend_repos }}"
+
+    - name: Build a map of resolved Node versions for each frontend repo
+      set_fact:
+        resolved_node_versions: >-
+          {{
+            resolved_node_versions | default({}) | combine({
+              item: (
+                group_clone_repos[item].node_version
+                | default(group_fallback_node_version[item] | default('18'))
+              )
+            })
+          }}
+      loop: "{{ frontend_repos }}"
+
+    - name: Ensure NVM directory exists and is writable (macOS)
+      file:
+        path: "{{ ansible_env.HOME }}/.nvm"
+        state: directory
+        mode: "0755"
+        owner: "{{ ansible_env.USER }}"
+        group: staff
+
+    - name: Install NVM (Node Version Manager) on macOS
+      shell: |
+        export NVM_DIR="{{ ansible_env.HOME }}/.nvm"
+        if [ ! -d "$NVM_DIR" ] || [ ! -f "$NVM_DIR/nvm.sh" ]; then
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        fi
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+
+    - name: Ensure NVM is sourced in ~/.zshrc
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.zshrc"
+        line: 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"'
+        create: yes
+        insertafter: EOF
+
+    - name: Log all frontend repo directories being checked
+      debug:
+        msg: >-
+          Checking directory: {{ frontend_repo_dirs[item] }}
+      loop: "{{ frontend_repos }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Check if package.json exists in each repo
+      stat:
+        path: "{{ frontend_repo_dirs[item] }}"
+      loop: "{{ frontend_repos }}"
+      register: package_json_stat
+
+    - name: Log all frontend repos that will use Yarn to install
+      debug:
+        msg: >-
+          Repo {{ item }} will use Yarn to install dependencies (Node version: {{ resolved_node_versions[item] }})
+      loop: "{{ frontend_repos_with_yarn_install }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Install Yarn globally using NPM (macOS) for selected repos
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install {{ resolved_node_versions[item] }}
+        nvm use {{ resolved_node_versions[item] }}
+        npm install -g yarn
+        yarn install
+      args:
+        chdir: "{{ frontend_repo_dirs[item] }}"
+        creates: "{{ ansible_env.HOME }}/.config/yarn/global"
+      loop: "{{ frontend_repos_with_yarn_install }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Log all frontend repos that will use NPM to install
+      debug:
+        msg: >-
+          Repo {{ item }} will use NPM to install dependencies (Node version: {{ resolved_node_versions[item] }})
+      loop: "{{ frontend_repos_with_npm_install }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Install Node dependencies with correct Node version
+      shell: |
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install {{ resolved_node_versions[item] }}
+        nvm use {{ resolved_node_versions[item] }}
+        npm install
+      args:
+        chdir: "{{ frontend_repo_dirs[item] }}"
+      loop: "{{ frontend_repos_with_npm_install }}"
+      loop_control:
+        label: "{{ item }}"

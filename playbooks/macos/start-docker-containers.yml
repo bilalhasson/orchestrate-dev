@@ -1,0 +1,134 @@
+- name: Start docker containers and listen for up time and then make fixtures (start-docker-containers.yml)
+  hosts: local_machine
+  gather_facts: true
+  roles:
+    - role: aws_login
+      when: group_aws_sso_login_required | bool
+  vars:
+    docker_build_repos: >-
+      {{
+        group_clone_repos
+        | dict2items
+        | selectattr('value.service', 'defined')
+        | selectattr('value.service', 'equalto', 'backend')
+        | selectattr('value.docker', 'defined')
+        | selectattr('value.docker.build_command', 'defined')
+        | selectattr('value.docker.up_command', 'defined')
+        | map(attribute='key')
+        | list
+      }}
+    backend_repos_with_fixtures: >-
+      {{
+        group_clone_repos
+        | dict2items
+        | selectattr('value.service', 'defined')
+        | selectattr('value.service', 'equalto', 'backend')
+        | selectattr('value.load_fixtures', 'defined')
+        | selectattr('value.load_fixtures', 'equalto', true)
+        | map(attribute='key')
+        | list
+      }}
+    check_ports_before_fixtures: >-
+      {{
+        dict(
+          group_clone_repos
+          | dict2items
+          | selectattr('value.service', 'defined')
+          | selectattr('value.service', 'equalto', 'backend')
+          | selectattr('value.docker', 'defined')
+          | selectattr('value.docker.check_ports_before_fixtures', 'defined')
+          | map(attribute='key')
+          | zip(
+              group_clone_repos
+              | dict2items
+              | selectattr('value.service', 'defined')
+              | selectattr('value.service', 'equalto', 'backend')
+              | selectattr('value.docker', 'defined')
+              | selectattr('value.docker.check_ports_before_fixtures', 'defined')
+              | map(attribute='value')
+              | map(attribute='docker.check_ports_before_fixtures')
+            )
+        ) | dict2items | subelements('value')
+      }}
+  tasks:
+    - name: Log out repos that require Docker build
+      ansible.builtin.debug:
+        msg: "Repos that require Docker build: {{ docker_build_repos }}"
+
+    - name: Log command to build Docker containers
+      ansible.builtin.debug:
+        msg: "Building Docker containers for repos: {{ group_clone_repos[item].docker.build_command }}"
+      loop: "{{ docker_build_repos }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Build a map of complete docker build directories for each repo
+      set_fact:
+        docker_build_dirs: >-
+          {{
+            docker_build_dirs | default({}) | combine({
+              item: ([group_develop_dir, item, group_clone_repos[item].docker.sub_dir | default('')] | path_join)
+            })
+          }}
+      loop: "{{ docker_build_repos }}"
+
+    - name: Notify user that building containers for the first time may take a while
+      ansible.builtin.debug:
+        msg: "Building the containers for the first time may take several minutes. Please be patient."
+
+    - name: Log which directory and command will be used for make build
+      ansible.builtin.debug:
+        msg: "Running '{{ group_clone_repos[item].docker.build_command }}' in directory '{{ docker_build_dirs[item] }}'"
+      loop: "{{ docker_build_repos }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Run make build for each service
+      ansible.builtin.command: >
+        {{ group_clone_repos[item].docker.build_command }}
+      args:
+        chdir: "{{ docker_build_dirs[item] }}"
+      loop: "{{ docker_build_repos }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Log which directory and command will be used for make up
+      ansible.builtin.debug:
+        msg: "Running '{{ group_clone_repos[item].docker.up_command }}' in directory '{{ docker_build_dirs[item] }}'"
+      loop: "{{ docker_build_repos }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Run make up for each service
+      ansible.builtin.command: "{{ group_clone_repos[item].docker.up_command }}"
+      args:
+        chdir: "{{ docker_build_dirs[item] }}"
+      loop: "{{ docker_build_repos }}"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Log which hosts and ports will be checked for service availability
+      ansible.builtin.debug:
+        msg: |
+          Checking host {{ item.1.override_host | default('localhost') }} on port {{ item.1.port }} for service {{ item.0.key }}
+      loop: "{{ check_ports_before_fixtures }}"
+      loop_control:
+        label: "{{ item.0.key }}:{{ item.1.port }}"
+
+    - name: Wait for all defined services to be up (check_ports_before_fixtures)
+      ansible.builtin.wait_for:
+        host: "{{ item.1.override_host | default('localhost') }}"
+        port: "{{ item.1.port }}"
+        delay: 2
+        timeout: 60
+      loop: "{{ check_ports_before_fixtures }}"
+      loop_control:
+        label: "{{ item.0.key }}:{{ item.1.port }}"
+
+    - name: Run make fixtures for backend repos that require it
+      ansible.builtin.command: make fixtures
+      args:
+        chdir: "{{ docker_build_dirs[item] }}"
+      loop: "{{ backend_repos_with_fixtures }}"
+      loop_control:
+        label: "{{ item }}"

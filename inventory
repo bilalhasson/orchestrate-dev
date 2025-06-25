@@ -1,0 +1,8 @@
+all:
+  hosts:
+    container1:
+      ansible_connection: local
+
+local_machine:
+  hosts:
+    container1:
