@@ -10,6 +10,23 @@ logging into the correct systems, cloning the right repos, etc.
 This repository contains an Ansible playbook to set up a macOS machine with various tools and configurations.
 It is designed to automate the installation of essential software and configurations for development environments.
 
+What I do when you execute the main playbook:
+
+1. Install:
+   - VSCode
+   - Homebrew
+   - dependencies like curl, unzip and python `packaging` to allow for AWS install
+   - AWS CLI
+2. Clone repositories defined in the `group_clone_repos` variable.
+3. Fetch environment variables from AWS Secrets Manager and create `.env` files defined in the `group_clone_repos` variable.
+4. Install Python packages using `pipenv` or `npm` as specified in the `group_clone_repos` variable.
+5. Setup the local development environment, `npm i` and `pipenv install`.
+6. Install Postgres version defined in the `group_postgres_version` variable.
+7. Install docker
+8. Build and run Docker containers for the cloned repositories, using the commands specified in the `group_clone_repos` variable.
+9. Make fixtures for the repositories, if specified in the `group_clone_repos` variable.
+10. Install postman
+
 # Table of Contents
 
 - [Prerequisites](#prerequisites)
@@ -36,6 +53,8 @@ It is designed to automate the installation of essential software and configurat
      ```
 
 # Run ansible playbook to set up a macOS machine
+
+Run the below command, and then enter your password when prompted.
 
 ```bash
 ansible-playbook -i inventory playbooks/macos/main.yml --ask-become-pass
