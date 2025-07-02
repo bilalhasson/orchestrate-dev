@@ -57,14 +57,14 @@
       register: docker_daemon_status
       failed_when: docker_daemon_status.rc != 0
       changed_when: false
-      ignore_errors: false
+      ignore_errors: true
 
-    - name: Fail with helpful message if Docker is not running
-      fail:
-        msg: |
+    - name: Prompt user to start Docker if not running
+      pause:
+        prompt: |
           Docker daemon is not running.
-          Please start Docker Desktop (or restart your machine), then resume the playbook with:
-            ansible-playbook -i inventory playbooks/macos/start-docker-containers.yml --start-at-task="Log out repos that require Docker build"
+          Please start Docker Desktop (or restart your machine), then press ENTER to continue.
+          If you have started Docker, you can continue. If not, press Ctrl+C to abort.
       when: docker_daemon_status.rc != 0
 
     - name: Log out repos that require Docker build
