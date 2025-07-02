@@ -14,14 +14,32 @@
         name: psycopg2-binary
         state: present
 
-    - name: Find out if pg has been initialized
-      ansible.builtin.stat:
+    - name: Check if pg_hba.conf exists in /opt/homebrew
+      stat:
         path: "/opt/homebrew/var/postgresql@{{ group_postgres_version }}/pg_hba.conf"
-      register: postgres_data
+      register: postgres_data_homebrew
+
+    - name: Check if pg_hba.conf exists in /usr/local
+      stat:
+        path: "/usr/local/var/postgresql@{{ group_postgres_version }}/pg_hba.conf"
+      register: postgres_data_usr_local
+
+    - name: Set fact if postgres is initialized
+      set_fact:
+        postgres_initialized: "{{ postgres_data_homebrew.stat.exists or postgres_data_usr_local.stat.exists }}"
+
+    - name: Get pg_ctl path
+      shell: command -v pg_ctl
+      register: pg_ctl_path
 
     - name: Initialize PostgreSQL if needed
-      shell: "/opt/homebrew/opt/postgresql@{{ group_postgres_version }}/bin/pg_ctl initdb --pgdata=/opt/homebrew/var/postgresql@{{ group_postgres_version }}"
-      when: not postgres_data.stat.exists
+      shell: "{{ pg_ctl_path.stdout }} initdb --pgdata={{ pgdata_path }}"
+      when: not postgres_initialized
+      vars:
+        pgdata_path: >-
+          {{ '/opt/homebrew/var/postgresql@' ~ group_postgres_version
+             if postgres_data_homebrew.stat.exists is not defined or not postgres_data_homebrew.stat.exists
+             else '/usr/local/var/postgresql@' ~ group_postgres_version }}
 
     - name: Start PostgreSQL 14 with Homebrew services
       shell: brew services start postgresql@{{ group_postgres_version }}
