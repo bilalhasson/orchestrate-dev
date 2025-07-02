@@ -1,58 +1,39 @@
 # Ansible Playbook for macOS Setup
 
-# Problem
-
-Setting up my laptop for work took way too long, getting the right tools,
-logging into the correct systems, cloning the right repos, etc.
-
-# Solution
-
 This repository contains an Ansible playbook to set up a macOS machine with various tools and configurations.
 It is designed to automate the installation of essential software and configurations for development environments.
 
-What I do when you execute the main playbook:
-
-1. Install:
-   - VSCode
-   - Homebrew
-   - dependencies like curl, unzip and python `packaging` to allow for AWS install
-   - AWS CLI
-2. Clone repositories defined in the `group_clone_repos` variable.
-3. Fetch environment variables from AWS Secrets Manager and create `.env` files defined in the `group_clone_repos` variable.
-4. Install Python packages using `pipenv` or `npm` as specified in the `group_clone_repos` variable.
-5. Setup the local development environment, `npm i` and `pipenv install`.
-6. Install Postgres version defined in the `group_postgres_version` variable.
-7. Install docker
-8. Build and run Docker containers for the cloned repositories, using the commands specified in the `group_clone_repos` variable.
-9. Make fixtures for the repositories, if specified in the `group_clone_repos` variable.
-10. Install postman
-
-# Table of Contents
+## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Run Ansible Playbook](#run-ansible-playbook-to-set-up-a-macos-machine)
+- [Run Ansible Playbook](#execute-the-ansible-playbook-to-set-up-a-macos-machine)
 - [Install Python and Ansible on macOS](#install-python-and-ansible-on-macos)
 - [Ansible Structure](#ansible-structure)
 - [Roles](#roles)
 - [Variables](#variables)
 
-# Prerequisites
+## Prerequisites
 
-1. Python
-2. Create venv for Ansible
-   - `python -m venv ansible`
-   - `source ansible/bin/activate`
-3. Ansible
-   - `pip install pipx`
-   - `pipx install ansible`
-4. SSH key for GitHub
-   - Create SSH key and add it to your GitHub account
+1. Ensure SSH key exists `ls ~/.ssh/id_*`
+   - If not `ssh-keygen`
+2. SSH key for GitHub
+   - Create SSH key and add it to your [GitHub account](https://github.com/settings/keys)
    - Add SSH key to your macOS keychain
      ```bash
+     eval "$(ssh-agent -s)"
      ssh-add ~/.ssh/<your-ssh-key>
      ```
+3. Python
+4. Create venv for Ansible
+   - `python3 -m venv ansible`
+   - `source ansible/bin/activate`
+5. Ansible
+   - `python3 -m pip install pipx`
+   - `pipx install --include-deps ansible`
+6. Install homebrew
+   - https://brew.sh
 
-# Run ansible playbook to set up a macOS machine
+## Execute the Ansible Playbook to set up a macOS machine
 
 Run the below command, and then enter your password when prompted.
 
@@ -60,24 +41,12 @@ Run the below command, and then enter your password when prompted.
 ansible-playbook -i inventory playbooks/macos/main.yml --ask-become-pass
 ```
 
-# Install Python and Ansible on macOS
+## Other details
 
-1. Create a Python virtual environment:
-   ```bash
-   python3 -m venv ansible
-   source ansible/bin/activate
-   ```
-2. Upgrade pip (recommended):
-   ```bash
-   pip install --upgrade pip
-   pip install pipx
-   ```
-3. Install Ansible inside the virtual environment:
-   ```bash
-   pipx install ansible
-   ```
+<details>
+<summary>Ansible Structure</summary>
 
-# Ansible Structure
+### Ansible Structure
 
       ansible/
       group_vars/
@@ -97,11 +66,43 @@ ansible-playbook -i inventory playbooks/macos/main.yml --ask-become-pass
                main.yml
          playbooks.yml
 
-# Roles
+</details>
 
-- `aws_login`: Configures AWS CLI with login credentials.
+<details>
+<summary>Click to expand for more details</summary>
 
-# Variables
+### Problem
+
+Setting up my laptop for work took way too long, getting the right tools,
+logging into the correct systems, cloning the right repos, etc.
+
+### Solution
+
+This repository contains an Ansible playbook to set up a macOS machine with various tools and configurations.
+It is designed to automate the installation of essential software and configurations for development environments.
+
+What I do when you execute the main playbook:
+
+1. Install:
+   - VSCode
+   - dependencies like curl, unzip and python `packaging` to allow for AWS install
+   - AWS CLI
+2. Clone repositories defined in the `group_clone_repos` variable.
+3. Fetch environment variables from AWS Secrets Manager and create `.env` files defined in the `group_clone_repos` variable.
+4. Install Python packages using `pipenv` or `npm` as specified in the `group_clone_repos` variable.
+5. Setup the local development environment, `npm i` and `pipenv install`.
+6. Install Postgres version defined in the `group_postgres_version` variable.
+7. Install docker
+8. Build and run Docker containers for the cloned repositories, using the commands specified in the `group_clone_repos` variable.
+9. Make fixtures for the repositories, if specified in the `group_clone_repos` variable.
+10. Install postman
+
+</details>
+
+<details>
+<summary>Variables</summary>
+
+### Variables
 
 Create variables in the `group_vars/all/env_vars.yml`.
 
@@ -161,3 +162,35 @@ group_postgres_version: 14
 # If repo node version not provided, use this as a fallback.
 group_fallback_node_version: "18"
 ```
+
+</details>
+
+<details>
+<summary>Install Python and Ansible on macOS</summary>
+
+### Install Python and Ansible on macOS
+
+1. Create a Python virtual environment:
+   ```bash
+   python3 -m venv ansible
+   source ansible/bin/activate
+   ```
+2. Upgrade pip (recommended):
+   ```bash
+   pip install --upgrade pip
+   pip install pipx
+   ```
+3. Install Ansible inside the virtual environment:
+   ```bash
+   pipx install ansible
+   ```
+   </details>
+
+<details>
+<summary>Roles</summary>
+
+### Roles
+
+- `aws_login`: Configures AWS CLI with login credentials.
+
+</details>

@@ -17,6 +17,11 @@
         name: docker-compose
         state: present
 
+    - name: Ensure docker-buildx is installed
+      homebrew:
+        name: docker-buildx
+        state: present
+
     - name: Prompt user to install Docker Desktop manually if automation fails
       pause:
         prompt: |
