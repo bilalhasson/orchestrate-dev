@@ -32,7 +32,7 @@
     - name: Install pipenv using pip
       pip:
         name: pipenv
-        executable: pip
+        executable: pip3
 
     - name: Ensure make is installed (macOS)
       homebrew:
