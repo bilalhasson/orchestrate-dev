@@ -64,7 +64,7 @@
         msg: |
           Docker daemon is not running.
           Please start Docker Desktop (or restart your machine), then resume the playbook with:
-            ansible-playbook -i inventory playbooks/macos/start-docker-containers.yml --start-at-task="Run make build for each service"
+            ansible-playbook -i inventory playbooks/macos/start-docker-containers.yml --start-at-task="Log out repos that require Docker build"
       when: docker_daemon_status.rc != 0
 
     - name: Log out repos that require Docker build
