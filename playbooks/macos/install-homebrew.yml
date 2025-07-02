@@ -3,22 +3,15 @@
   hosts: local_machine
   gather_facts: true
   tasks:
-    - name: Check if Homebrew is installed
-      stat:
-        path: /opt/homebrew/bin/brew
-      register: brew_stat
+    - name: Check if Homebrew is installed (any location)
+      shell: command -v brew
+      register: brew_check
+      ignore_errors: true
 
     - name: Install Homebrew
-      when: not brew_stat.stat.exists
+      when: brew_check.rc != 0
       shell: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       args:
         creates: /opt/homebrew/bin/brew
       become: true
-
-    - name: Ensure Homebrew is in the PATH
-      lineinfile:
-        path: ~/.zprofile
-        line: 'eval "$(/opt/homebrew/bin/brew shellenv)"'
-        state: present
-      when: not brew_stat.stat.exists
