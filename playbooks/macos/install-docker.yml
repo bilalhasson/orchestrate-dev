@@ -25,10 +25,8 @@
     - name: Prompt user to install Docker Desktop manually if automation fails
       pause:
         prompt: |
-
-          Docker has been installed, so you can use commands like `docker run` and `docker compose`.
-          However, Docker Desktop is not installed automatically by this playbook. 
-          If you want Docker Desktop installed, please run the following command in your terminal:
+          Docker Desktop is not installed automatically by this playbook. 
+          Please install it by running the following command in your terminal:
 
             brew install --cask docker
 
@@ -42,5 +40,14 @@
 
           After installation, you may need to start Docker Desktop manually.
           Then open Docker Desktop from Applications and complete setup.
+
+          Press ENTER to continue after completing these steps.
+
+    - name: Prompt user to open Docker Desktop
+      pause:
+        prompt: |
+          Please open and configure Docker Desktop from Applications and complete the setup.
+
+            open -a "Docker"
 
           Press ENTER to continue after completing these steps.

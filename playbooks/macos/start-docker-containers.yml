@@ -65,7 +65,21 @@
           Docker daemon is not running.
           Please start Docker Desktop (or restart your machine), then press ENTER to continue.
           If you have started Docker, you can continue. If not, press Ctrl+C to abort.
+          If it still errors, please fix docker and then continue by running:
+          ansible-playbook -i inventory playbooks/macos/main.yml --start-at-task="Log out repos that require Docker build"
       when: docker_daemon_status.rc != 0
+
+    - name: Check if Docker daemon is running
+      shell: |
+        docker info > /dev/null 2>&1
+      register: docker_daemon_status
+      failed_when: docker_daemon_status.rc != 0
+      changed_when: false
+      ignore_errors: false
+
+    - name: Ensure 'shared' Docker network exists
+      command: docker network create shared
+      ignore_errors: true
 
     - name: Log out repos that require Docker build
       ansible.builtin.debug:
