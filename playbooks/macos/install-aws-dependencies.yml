@@ -8,11 +8,10 @@
         name: python3
         state: present
 
-    - name: Install python 'packaging' module
-      pip:
-        name: packaging
-        executable: pip3
-        extra_args: --user
+    - name: Install python-packaging via Homebrew
+      homebrew:
+        name: python-packaging
+        state: present
 
     - name: Install dependencies
       package:
