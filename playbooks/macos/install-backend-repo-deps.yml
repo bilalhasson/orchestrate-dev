@@ -29,10 +29,10 @@
         name: python
         state: present
 
-    - name: Install pipenv using pip
-      pip:
+    - name: Install pipenv using Homebrew
+      homebrew:
         name: pipenv
-        executable: pip3
+        state: present
 
     - name: Ensure make is installed (macOS)
       homebrew:
