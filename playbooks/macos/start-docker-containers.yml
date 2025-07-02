@@ -51,6 +51,22 @@
         ) | dict2items | subelements('value')
       }}
   tasks:
+    - name: Check if Docker daemon is running
+      shell: |
+        docker info > /dev/null 2>&1
+      register: docker_daemon_status
+      failed_when: docker_daemon_status.rc != 0
+      changed_when: false
+      ignore_errors: false
+
+    - name: Fail with helpful message if Docker is not running
+      fail:
+        msg: |
+          Docker daemon is not running.
+          Please start Docker Desktop (or restart your machine), then resume the playbook with:
+            ansible-playbook -i inventory playbooks/macos/start-docker-containers.yml --start-at-task="Run make build for each service"
+      when: docker_daemon_status.rc != 0
+
     - name: Log out repos that require Docker build
       ansible.builtin.debug:
         msg: "Repos that require Docker build: {{ docker_build_repos }}"
