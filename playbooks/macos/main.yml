@@ -1,5 +1,4 @@
 - import_playbook: install-vscode.yml
-- import_playbook: install-homebrew.yml
 - import_playbook: install-aws-dependencies.yml
 - import_playbook: install-awscli-macos.yml
 - import_playbook: clone-repos.yml
