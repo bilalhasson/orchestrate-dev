@@ -9,3 +9,4 @@
 - import_playbook: install-frontend-repo-deps.yml
 - import_playbook: start-docker-containers.yml
 - import_playbook: install-postman.yml
+- import_playbook: finish.yml

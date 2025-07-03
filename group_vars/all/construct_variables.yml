@@ -1,0 +1,125 @@
+docker_build_repos: >-
+  {{
+    group_clone_repos
+    | dict2items
+    | selectattr('value.service', 'defined')
+    | selectattr('value.service', 'equalto', 'backend')
+    | selectattr('value.docker', 'defined')
+    | selectattr('value.docker.build_command', 'defined')
+    | selectattr('value.docker.up_command', 'defined')
+    | map(attribute='key')
+    | list
+  }}
+
+backend_repos_with_fixtures: >-
+  {{
+    group_clone_repos
+    | dict2items
+    | selectattr('value.service', 'defined')
+    | selectattr('value.service', 'equalto', 'backend')
+    | selectattr('value.load_fixtures', 'defined')
+    | selectattr('value.load_fixtures', 'equalto', true)
+    | map(attribute='key')
+    | list
+  }}
+
+check_ports_before_fixtures: >-
+  {{
+    dict(
+      group_clone_repos
+      | dict2items
+      | selectattr('value.service', 'defined')
+      | selectattr('value.service', 'equalto', 'backend')
+      | selectattr('value.docker', 'defined')
+      | selectattr('value.docker.check_ports_before_fixtures', 'defined')
+      | map(attribute='key')
+      | zip(
+          group_clone_repos
+          | dict2items
+          | selectattr('value.service', 'defined')
+          | selectattr('value.service', 'equalto', 'backend')
+          | selectattr('value.docker', 'defined')
+          | selectattr('value.docker.check_ports_before_fixtures', 'defined')
+          | map(attribute='value')
+          | map(attribute='docker.check_ports_before_fixtures')
+        )
+    ) | dict2items | subelements('value')
+  }}
+
+secrets: >-
+  {{
+    group_clone_repos
+    | dict2items
+    | selectattr('value.env_secret', 'defined')
+    | map(attribute='value.env_secret')
+    | list
+  }}
+
+tmp_dir: "{{ override_executable_temp_dir | default('/tmp') }}"
+
+backend_repos_requiring_pipenv: >-
+  {{ group_clone_repos
+      | dict2items
+      | selectattr('value.service', 'defined')
+      | selectattr('value.service', 'equalto', 'backend')
+      | selectattr('value.install_pipenv', 'defined')
+      | selectattr('value.install_pipenv')
+      | map(attribute='key')
+      | list
+  }}
+
+frontend_repos: >-
+  {{ group_clone_repos
+      | dict2items
+      | selectattr('value.service', 'defined')
+      | selectattr('value.service', 'equalto', 'frontend')
+      | map(attribute='key')
+      | list
+  }}
+
+frontend_repos_with_npm_install: >-
+  {{ group_clone_repos
+      | dict2items
+      | selectattr('value.service', 'defined')
+      | selectattr('value.service', 'equalto', 'frontend')
+      | selectattr('value.install_method', 'defined')
+      | selectattr('value.install_method', 'equalto', 'npm')
+      | map(attribute='key')
+      | list
+  }}
+
+frontend_repos_with_yarn_install: >-
+  {{ group_clone_repos
+      | dict2items
+      | selectattr('value.service', 'defined')
+      | selectattr('value.service', 'equalto', 'frontend')
+      | selectattr('value.install_method', 'defined')
+      | selectattr('value.install_method', 'equalto', 'yarn')
+      | map(attribute='key')
+      | list
+  }}
+
+vscode_cask_name: visual-studio-code
+extensions:
+  - formulahendry.auto-rename-tag
+  - ms-python.black-formatter
+  - wmaurer.change-case
+  - streetsidesoftware.code-spell-checker
+  - usernamehw.errorlens
+  - dsznajder.es7-react-js-snippets
+  - dbaeumer.vscode-eslint
+  - github.vscode-github-actions
+  - github.vscode-pull-request-github
+  - ecmel.vscode-html-css
+  - orta.vscode-jest
+  - ms-vsliveshare.vsliveshare
+  - esbenp.prettier-vscode
+  - yoavbls.pretty-ts-errors
+  - ms-python.vscode-pylance
+  - ms-python.python
+  - ms-python.debugpy
+  - tushortz.python-extended-snippets
+  - frhtylcn.pythonsnippets
+  - sanity-io.vscode-sanity
+  - wayou.vscode-todo-highlight
+  - gruntfuggly.todo-tree

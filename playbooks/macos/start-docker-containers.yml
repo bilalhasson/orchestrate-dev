@@ -4,52 +4,6 @@
   roles:
     - role: aws_login
       when: group_aws_sso_login_required | bool
-  vars:
-    docker_build_repos: >-
-      {{
-        group_clone_repos
-        | dict2items
-        | selectattr('value.service', 'defined')
-        | selectattr('value.service', 'equalto', 'backend')
-        | selectattr('value.docker', 'defined')
-        | selectattr('value.docker.build_command', 'defined')
-        | selectattr('value.docker.up_command', 'defined')
-        | map(attribute='key')
-        | list
-      }}
-    backend_repos_with_fixtures: >-
-      {{
-        group_clone_repos
-        | dict2items
-        | selectattr('value.service', 'defined')
-        | selectattr('value.service', 'equalto', 'backend')
-        | selectattr('value.load_fixtures', 'defined')
-        | selectattr('value.load_fixtures', 'equalto', true)
-        | map(attribute='key')
-        | list
-      }}
-    check_ports_before_fixtures: >-
-      {{
-        dict(
-          group_clone_repos
-          | dict2items
-          | selectattr('value.service', 'defined')
-          | selectattr('value.service', 'equalto', 'backend')
-          | selectattr('value.docker', 'defined')
-          | selectattr('value.docker.check_ports_before_fixtures', 'defined')
-          | map(attribute='key')
-          | zip(
-              group_clone_repos
-              | dict2items
-              | selectattr('value.service', 'defined')
-              | selectattr('value.service', 'equalto', 'backend')
-              | selectattr('value.docker', 'defined')
-              | selectattr('value.docker.check_ports_before_fixtures', 'defined')
-              | map(attribute='value')
-              | map(attribute='docker.check_ports_before_fixtures')
-            )
-        ) | dict2items | subelements('value')
-      }}
   tasks:
     - name: Check if Docker daemon is running
       shell: |
@@ -154,6 +108,14 @@
       loop: "{{ check_ports_before_fixtures }}"
       loop_control:
         label: "{{ item.0.key }}:{{ item.1.port }}"
+
+    - name: Prompt user to check that all migrations are complete
+      pause:
+        prompt: |
+          Please ensure that all database migrations are complete before proceeding.
+          You can do this by opening the Docker containers for the API backends and checking their logs.
+          Once you have verified that migrations are finished, press ENTER to continue.
+          If migrations are still running, wait until they are complete before continuing.
 
     - name: Run make fixtures for backend repos that require it
       ansible.builtin.command: make fixtures

@@ -2,17 +2,6 @@
 - name: Install dependencies for all backend repositories (install-backend-repo-deps.yml)
   hosts: local_machine
   gather_facts: true
-  vars:
-    backend_repos_requiring_pipenv: >-
-      {{ group_clone_repos
-          | dict2items
-          | selectattr('value.service', 'defined')
-          | selectattr('value.service', 'equalto', 'backend')
-          | selectattr('value.install_pipenv', 'defined')
-          | selectattr('value.install_pipenv')
-          | map(attribute='key')
-          | list
-      }}
   tasks:
     - name: Install WeasyPrint dependencies on macOS
       homebrew:

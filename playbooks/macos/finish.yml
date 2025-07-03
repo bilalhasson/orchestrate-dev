@@ -1,0 +1,27 @@
+---
+- name: Finish Setup and Provide Instructions
+  hosts: local_machine
+  gather_facts: false
+  tasks:
+    - name: Display completion message and instructions
+      pause:
+        prompt: |
+          ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+          ┃ 🎉  All setup steps are complete!                          ┃
+          ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+          Your repository files are located at:
+            {{ group_develop_dir }}
+
+          The backend services are running in Docker and should be accessible.
+
+          To run the frontend applications:
+            1. Navigate to the appropriate frontend directory (e.g., {{ frontend_repos | join(', ') }}).
+            2. Run the appropriate start command, such as:
+                 npm start
+              or 
+                 npm run dev
+
+          Please refer to each frontend's README for specific instructions.
+
+          Press ENTER to finish.

@@ -2,8 +2,6 @@
 - name: Install AWS CLI v2 on target machine (install-awscli-macos.yml)
   hosts: local_machine
   gather_facts: true
-  vars:
-    tmp_dir: "{{ override_executable_temp_dir | default('/tmp') }}"
   tasks:
     - name: Download awscliv2 installer.
       get_url:

@@ -104,7 +104,7 @@ What I do when you execute the main playbook:
 
 ### Variables
 
-Create variables in the `group_vars/all/env_vars.yml`.
+Create variables in the `group_vars/all/env_vars.yml`. There's a file already in there called `env_vars.example.yml` which you can rename to `env_vars.yml`.
 
 ```yaml
 python_interpreter: ".../bin/python"

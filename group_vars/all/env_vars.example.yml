@@ -1,0 +1,60 @@
+# TODO: Rename this file to point to your python interpreter.
+python_interpreter: ".../bin/python"
+
+# TODO: Add directory for where you want all your repos to be cloned.
+group_develop_dir: ".../repos/location"
+
+# TODO: If you require SSO, make sure this is true
+# If SSO is required, set to true.
+group_aws_sso_login_required: true
+
+# TODO: AWS sign's in using SSO, so you need to provide the details below for sso_account_id and sso_role_name
+# AWS SSO
+group_aws_details:
+  region: eu-west-2
+  output: json
+  sso_start_url: https://d-9c6714caab.awsapps.com/start
+  sso_region: eu-west-2
+  sso_account_id: <sso_account_id>
+  sso_role_name: <sso_role_name>
+
+  ecr_login_url: <id>.dkr.ecr.<region>.amazonaws.com
+
+# Default is `/tmp`, change if you want to use a different directory for temporary files.
+override_executable_temp_dir: /tmp
+
+# TODO: Ne sure to add your organization or username here for the repos you want to clone.
+# At the moment this only works for repo's in the same organization or user.
+# This is used to prefix the repo name when cloning repos.
+group_repo_organization: <org or user>
+
+# TODO: Set up this dictionary with the repos you want to clone.
+group_clone_repos:
+  backend-repo-name:
+    service: "backend"
+    install_pipenv: true # If pipenv is used, and you want to install set to true.
+    pipenv_subdir: <sub_dir> # Specify the subdirectory of Pipfile if applicable.
+    env_secret: # Environment secret for the repo. Uses aws secretsmanager.
+      id: secret-id
+      file: "{{ [group_develop_dir, '.../.env'] | path_join }}"
+    load_fixtures: true # Default command to load fixtures is `make fixtures`.
+    docker:
+      build_command: "make build"
+      up_command: "make up"
+      check_ports_before_fixtures:
+        - port: 8001 # web
+        - port: 5433 # db
+
+  frontend-repo-name:
+    service: "frontend"
+    install_method: "npm"
+    node_version: "20.18"
+    env_secret:
+      id: secret-id
+      file: "{{ [group_develop_dir, 'frontend-repo-name', '.env.local'] | path_join }}"
+
+# Postgres
+group_postgres_version: 14
+
+# If repo node version not provided, use this as a fallback.
+group_fallback_node_version: "18"

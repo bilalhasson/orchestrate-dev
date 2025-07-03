@@ -2,35 +2,6 @@
 - name: Install dependencies for all frontend repositories
   hosts: local_machine
   gather_facts: true
-  vars:
-    frontend_repos: >-
-      {{ group_clone_repos
-          | dict2items
-          | selectattr('value.service', 'defined')
-          | selectattr('value.service', 'equalto', 'frontend')
-          | map(attribute='key')
-          | list
-      }}
-    frontend_repos_with_npm_install: >-
-      {{ group_clone_repos
-          | dict2items
-          | selectattr('value.service', 'defined')
-          | selectattr('value.service', 'equalto', 'frontend')
-          | selectattr('value.install_method', 'defined')
-          | selectattr('value.install_method', 'equalto', 'npm')
-          | map(attribute='key')
-          | list
-      }}
-    frontend_repos_with_yarn_install: >-
-      {{ group_clone_repos
-          | dict2items
-          | selectattr('value.service', 'defined')
-          | selectattr('value.service', 'equalto', 'frontend')
-          | selectattr('value.install_method', 'defined')
-          | selectattr('value.install_method', 'equalto', 'yarn')
-          | map(attribute='key')
-          | list
-      }}
   tasks:
     - name: Build a map of frontend repo directories
       set_fact:
